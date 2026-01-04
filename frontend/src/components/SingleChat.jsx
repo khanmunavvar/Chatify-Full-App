@@ -2,13 +2,13 @@ import React, { useEffect, useState } from "react";
 import { ChatState } from "../Context/ChatProvider";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaPaperPlane } from "react-icons/fa"; // Icon added
 import ScrollableChat from "./ScrollableChat";
 import UpdateGroupChatModal from "./Extras/UpdateGroupChatModal";
 import ProfileModal from "./Extras/ProfileModal";
 import io from "socket.io-client";
 
-const ENDPOINT = "https://chatify-backend-munavvar.onrender.com"; 
+const ENDPOINT = "https://chatify-backend-munavvar.onrender.com";
 var socket, selectedChatCompare;
 
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {
@@ -45,7 +45,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         headers: { Authorization: `Bearer ${user.token}` },
       };
       setLoading(true);
-      
+
       const { data } = await axios.get(
         `/api/message/${selectedChat._id}`,
         config
@@ -62,9 +62,10 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
-  // --- 3. Send Message Handler ---
+  // --- 3. Send Message Handler (Updated for Button + Enter) ---
   const sendMessage = async (event) => {
-    if (event.key === "Enter" && newMessage) {
+    // Check if event exists. If it's a key press, it must be "Enter". If it's a click, it passes.
+    if ((!event.key || event.key === "Enter") && newMessage) {
       try {
         const config = {
           headers: {
@@ -170,14 +171,24 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               )}
             </div>
 
-            {/* Input Field */}
-            <input
-              className="w-full bg-white p-3 mt-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500 transition-all"
-              placeholder="Enter a message.."
-              onChange={(e) => setNewMessage(e.target.value)}
-              value={newMessage}
-              onKeyDown={sendMessage}
-            />
+            {/* Input Field & Send Button Container */}
+            <div className="flex items-center mt-3 gap-2">
+              <input
+                className="w-full bg-white p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500 transition-all"
+                placeholder="Enter a message.."
+                onChange={(e) => setNewMessage(e.target.value)}
+                value={newMessage}
+                onKeyDown={sendMessage}
+              />
+              
+              {/* Send Button */}
+              <button 
+                onClick={sendMessage}
+                className="p-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all shadow-md flex items-center justify-center"
+              >
+                <FaPaperPlane size={20} />
+              </button>
+            </div>
           </div>
         </>
       ) : (
