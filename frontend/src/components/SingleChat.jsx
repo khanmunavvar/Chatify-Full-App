@@ -8,7 +8,7 @@ import UpdateGroupChatModal from "./Extras/UpdateGroupChatModal";
 import ProfileModal from "./Extras/ProfileModal";
 import io from "socket.io-client";
 
-const ENDPOINT = "http://localhost:5000"; 
+const ENDPOINT = "https://chatify-backend-munavvar.onrender.com"; 
 var socket, selectedChatCompare;
 
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {

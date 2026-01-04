@@ -3,10 +3,11 @@ import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
 import { BrowserRouter } from "react-router-dom";
-import ChatProvider from "./Context/ChatProvider"; // <--- 1. Import kiya
-
+import ChatProvider from "./Context/ChatProvider"; 
+import axios from "axios";
+axios.defaults.baseURL = "https://chatify-backend-munavvar.onrender.com";
 ReactDOM.createRoot(document.getElementById("root")).render(
-  // 2. ChatProvider ko BrowserRouter ke andar lagaya
+ 
   <BrowserRouter>
     <ChatProvider>
       <App />
