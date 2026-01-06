@@ -16,7 +16,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
-
+  const inputRef = useRef(null);
   // Accessing Global State
   const { user, selectedChat, setSelectedChat, notification, setNotification } = ChatState();
 
@@ -75,7 +75,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         };
 
         setNewMessage(""); // Clear input field
-        
+
         const { data } = await axios.post(
           "/api/message",
           { content: newMessage, chatId: selectedChat._id },
@@ -174,16 +174,16 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             {/* Input Field & Send Button Container */}
             <div className="flex items-center mt-3 gap-2">
               <input
-              ref={inputRef}
+                ref={inputRef}
                 className="w-full bg-white p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500 transition-all"
                 placeholder="Enter a message.."
                 onChange={(e) => setNewMessage(e.target.value)}
                 value={newMessage}
                 onKeyDown={sendMessage}
               />
-              
+
               {/* Send Button */}
-              <button 
+              <button
                 onClick={sendMessage}
                 className="p-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all shadow-md flex items-center justify-center"
               >
