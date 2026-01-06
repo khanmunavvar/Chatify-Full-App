@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChatState } from "../Context/ChatProvider";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { FaArrowLeft, FaPaperPlane } from "react-icons/fa"; // Icon added
+import { FaArrowLeft, FaPaperPlane } from "react-icons/fa";
 import ScrollableChat from "./ScrollableChat";
 import UpdateGroupChatModal from "./Extras/UpdateGroupChatModal";
 import ProfileModal from "./Extras/ProfileModal";
@@ -16,45 +16,36 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
+
+  // 1. The Reference for the input box
   const inputRef = useRef(null);
-  // Accessing Global State
+
   const { user, selectedChat, setSelectedChat, notification, setNotification } = ChatState();
 
-  // Helper functions for sender details
   const getSender = (loggedUser, users) => {
+    if (!users || !users.length) return "Unknown User";
     return users[0]._id === loggedUser._id ? users[1].name : users[0].name;
   };
 
   const getSenderFull = (loggedUser, users) => {
+    if (!users || !users.length) return {};
     return users[0]._id === loggedUser._id ? users[1] : users[0];
   };
 
-  // --- 1. Socket.io Initialization ---
   useEffect(() => {
     socket = io(ENDPOINT);
     socket.emit("setup", user);
     socket.on("connected", () => setSocketConnected(true));
   }, []);
 
-  // --- 2. Fetch Messages from Backend ---
   const fetchMessages = async () => {
     if (!selectedChat) return;
-
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${user.token}` },
-      };
+      const config = { headers: { Authorization: `Bearer ${user.token}` } };
       setLoading(true);
-
-      const { data } = await axios.get(
-        `/api/message/${selectedChat._id}`,
-        config
-      );
-
+      const { data } = await axios.get(`/api/message/${selectedChat._id}`, config);
       setMessages(data);
       setLoading(false);
-
-      // Join the specific chat room
       socket.emit("join chat", selectedChat._id);
     } catch (error) {
       toast.error("Failed to Load the Messages");
@@ -62,10 +53,13 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
-  // --- 3. Send Message Handler (Updated for Button + Enter) ---
   const sendMessage = async (event) => {
-    // Check if event exists. If it's a key press, it must be "Enter". If it's a click, it passes.
+    // If it's a keypress, make sure it's Enter. If it's a click (no key), let it pass.
     if ((!event.key || event.key === "Enter") && newMessage) {
+      
+      // Stop the form from submitting normally
+      if(event.preventDefault) event.preventDefault();
+
       try {
         const config = {
           headers: {
@@ -74,7 +68,10 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           },
         };
 
-        setNewMessage(""); // Clear input field
+        setNewMessage(""); 
+
+        // 2. FORCE FOCUS: Run this immediately to keep keyboard up
+        if (inputRef.current) inputRef.current.focus();
 
         const { data } = await axios.post(
           "/api/message",
@@ -82,7 +79,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           config
         );
 
-        // Emit new message to server
         socket.emit("new message", data);
         setMessages([...messages, data]);
       } catch (error) {
@@ -91,34 +87,23 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     }
   };
 
-  // Fetch messages whenever a new chat is selected
   useEffect(() => {
     fetchMessages();
     selectedChatCompare = selectedChat;
   }, [selectedChat]);
 
-  // --- 4. Real-time Message Listener ---
   useEffect(() => {
     const handleMessageReceived = (newMessageRecieved) => {
-      // Logic: If chat is not open or user is in another chat
-      if (
-        !selectedChatCompare ||
-        selectedChatCompare._id !== newMessageRecieved.chat._id
-      ) {
-        // Add to notification list if not already present
+      if (!selectedChatCompare || selectedChatCompare._id !== newMessageRecieved.chat._id) {
         if (!notification.some((n) => n._id === newMessageRecieved._id)) {
           setNotification([newMessageRecieved, ...notification]);
-          setFetchAgain(!fetchAgain); // Refresh chat list in sidebar
+          setFetchAgain(!fetchAgain);
         }
       } else {
-        // Append new message to current chat window
         setMessages([...messages, newMessageRecieved]);
       }
     };
-
     socket.on("message received", handleMessageReceived);
-
-    // Cleanup function to prevent duplicate listeners
     return () => {
       socket.off("message received", handleMessageReceived);
     };
@@ -128,7 +113,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     <>
       {selectedChat ? (
         <>
-          {/* Chat Header */}
           <div className="text-xl md:text-2xl pb-3 px-2 w-full font-sans flex items-center justify-between border-b border-gray-200 bg-white">
             <button
               className="md:hidden mr-2 p-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
@@ -136,28 +120,26 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             >
               <FaArrowLeft />
             </button>
-
             <span className="font-bold text-gray-800">
-              {!selectedChat.isGroupChat ? (
-                getSender(user, selectedChat.users)
-              ) : (
-                selectedChat.chatName.toUpperCase()
-              )}
+              {selectedChat.isGroupChat 
+                ? selectedChat.chatName.toUpperCase() 
+                : (selectedChat.users && getSender(user, selectedChat.users))}
             </span>
             <div>
-              {!selectedChat.isGroupChat ? (
+              {!selectedChat.isGroupChat && selectedChat.users ? (
                 <ProfileModal user={getSenderFull(user, selectedChat.users)} />
               ) : (
-                <UpdateGroupChatModal
-                  fetchAgain={fetchAgain}
-                  setFetchAgain={setFetchAgain}
-                  fetchMessages={fetchMessages}
-                />
+                selectedChat.isGroupChat && (
+                  <UpdateGroupChatModal
+                    fetchAgain={fetchAgain}
+                    setFetchAgain={setFetchAgain}
+                    fetchMessages={fetchMessages}
+                  />
+                )
               )}
             </div>
           </div>
 
-          {/* Chat Body */}
           <div className="flex flex-col justify-between p-3 bg-[#E8E8E8] w-full h-full rounded-lg overflow-hidden mt-3 shadow-inner">
             <div className="flex flex-col overflow-y-auto w-full h-full scrollbar-hide">
               {loading ? (
@@ -171,19 +153,20 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
               )}
             </div>
 
-            {/* Input Field & Send Button Container */}
+            {/* Input Area */}
             <div className="flex items-center mt-3 gap-2">
               <input
-                ref={inputRef}
+                ref={inputRef} 
                 className="w-full bg-white p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500 transition-all"
                 placeholder="Enter a message.."
                 onChange={(e) => setNewMessage(e.target.value)}
                 value={newMessage}
                 onKeyDown={sendMessage}
               />
-
-              {/* Send Button */}
-              <button
+              
+              {/* 3. THE MAGIC FIX: onMouseDown prevents the button from stealing focus */}
+              <button 
+                onMouseDown={(e) => e.preventDefault()} 
                 onClick={sendMessage}
                 className="p-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all shadow-md flex items-center justify-center"
               >
@@ -193,7 +176,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           </div>
         </>
       ) : (
-        // Welcome Screen
         <div className="flex items-center justify-center h-full flex-col">
           <p className="text-3xl pb-3 font-sans text-gray-400 font-bold">
             Chatify
