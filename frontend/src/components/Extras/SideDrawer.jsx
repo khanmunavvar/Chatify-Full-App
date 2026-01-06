@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react"; // 1. Imported useRef and useEffect
 import { useNavigate } from "react-router-dom";
 import { ChatState } from "../../Context/ChatProvider";
 import ProfileModal from "./ProfileModal";
@@ -18,21 +18,54 @@ const SideDrawer = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
+  // 2. Created Refs for "Click Outside" logic
+  const notifRef = useRef(null);
+  const userMenuRef = useRef(null);
+
   const { user, setSelectedChat, chats, setChats, notification, setNotification } = ChatState();
   const navigate = useNavigate();
 
-  // Handle Logout
   const logoutHandler = () => {
     localStorage.removeItem("userInfo");
     navigate("/");
   };
 
-  // Helper to get sender name for notification
   const getSender = (loggedUser, users) => {
     return users[0]._id === loggedUser._id ? users[1].name : users[0].name;
   };
 
-  // Handle User Search
+  // 3. The "Click Outside" Listener
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // If Notification Menu is open AND click is NOT inside the notification container
+      if (
+        isNotifOpen &&
+        notifRef.current &&
+        !notifRef.current.contains(event.target)
+      ) {
+        setIsNotifOpen(false);
+      }
+
+      // If User Menu is open AND click is NOT inside the user menu container
+      if (
+        isMenuOpen &&
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    // Bind the event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    return () => {
+      // Unbind the event listener on clean up
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isNotifOpen, isMenuOpen]);
+
+
   const handleSearch = async () => {
     if (!search) {
       toast.warning("Please Enter something in search");
@@ -53,7 +86,6 @@ const SideDrawer = () => {
     }
   };
 
-  // Handle Creating/Accessing Chat
   const accessChat = async (userId) => {
     try {
       setLoadingChat(true);
@@ -69,14 +101,13 @@ const SideDrawer = () => {
 
       setSelectedChat(data);
       setLoadingChat(false);
-      setIsDrawerOpen(false); // Close sidebar
+      setIsDrawerOpen(false);
     } catch (error) {
       toast.error("Error fetching the chat");
       setLoadingChat(false);
     }
   };
 
-  // User Profile Image Logic
   const userImage =
     user.pic &&
     user.pic !==
@@ -105,8 +136,9 @@ const SideDrawer = () => {
         {/* Right Side Icons */}
         <div className="flex items-center space-x-4">
           
-          {/* Notification Menu */}
-          <div className="relative">
+          {/* Notification Menu Container */}
+          {/* 4. Attached ref={notifRef} to the container */}
+          <div className="relative" ref={notifRef}>
             <button 
               onClick={() => setIsNotifOpen(!isNotifOpen)} 
               className="relative p-2 focus:outline-none"
@@ -147,8 +179,9 @@ const SideDrawer = () => {
             )}
           </div>
 
-          {/* User Profile Menu */}
-          <div className="relative">
+          {/* User Profile Menu Container */}
+          {/* 5. Attached ref={userMenuRef} to the container */}
+          <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="flex items-center space-x-2 bg-gray-100 p-1 pr-2 rounded-lg hover:bg-gray-200 transition"

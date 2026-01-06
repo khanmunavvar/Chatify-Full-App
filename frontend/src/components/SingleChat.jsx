@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ChatState } from "../Context/ChatProvider";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -174,6 +174,7 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
             {/* Input Field & Send Button Container */}
             <div className="flex items-center mt-3 gap-2">
               <input
+              ref={inputRef}
                 className="w-full bg-white p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-teal-500 transition-all"
                 placeholder="Enter a message.."
                 onChange={(e) => setNewMessage(e.target.value)}
